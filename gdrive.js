@@ -17,8 +17,8 @@
 
 // ── Configuration — fill these in ─────────────────────────────────────────────
 export const GDRIVE_CONFIG = {
-  CLIENT_ID: '',   // e.g. '123456789-abc.apps.googleusercontent.com'
-  API_KEY:   '',   // e.g. 'AIzaSy...'
+  CLIENT_ID: '131290314452-n8kc0tic7lrq62sp1qsf08n1s70rnv7u.apps.googleusercontent.com',   // e.g. '123456789-abc.apps.googleusercontent.com'
+  API_KEY:   'AIzaSyCNRT__kpE2VQndkPEUXOPsD0U6m4Jdlyw',   // e.g. 'AIzaSy...'
   SCOPE:     'https://www.googleapis.com/auth/drive.readonly',
 };
 
