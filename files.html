@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="theme-color" content="#2d4a3e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<title>Files — Child Planner</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#f9f7f4;--surface:#fff;--surface2:#f2ede7;--surface3:#e8e0d6;
+  --text:#1c1c1e;--text2:#555550;--text3:#8a857e;
+  --green:#2d4a3e;--green-l:#e8f2ee;--green-m:#a8d4be;
+  --red:#b5451b;--red-l:#fdeee9;
+  --blue:#1a4a8a;--blue-l:#e8f0fb;
+  --warn:#c17d0a;--warn-l:#fef8e7;
+  --radius:14px;--radius-sm:8px;--radius-lg:20px;
+  --shadow:0 2px 12px rgba(0,0,0,0.08);
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+@media(prefers-color-scheme:dark){
+  :root{--bg:#0f1210;--surface:#1c2220;--surface2:#252e2a;--surface3:#2f3b36;
+    --text:#f0ebe3;--text2:#a8a49e;--text3:#6b6760;
+    --green:#4a7a66;--green-l:#1a2e26;--green-m:#2a4a3a;
+    --red-l:#2e150d;--blue-l:#0d1a2e;--warn-l:#2e2008;}
+}
+html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);font-size:15px;overflow-x:hidden}
+#header{background:var(--green);color:#fff;padding:calc(var(--safe-top)+12px) 20px 14px;display:flex;align-items:center;gap:12px}
+#header a{color:rgba(240,235,227,0.7);text-decoration:none;font-size:22px;line-height:1}
+#header h1{font-family:'DM Serif Display',serif;font-size:20px;font-weight:400;color:#f0ebe3;flex:1}
+#header p{font-size:12px;color:rgba(240,235,227,0.6);margin-top:1px}
+#content{padding:16px;padding-bottom:calc(80px + var(--safe-bottom));max-width:640px;margin:0 auto}
+
+/* TOOLBAR */
+.toolbar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity 0.15s;white-space:nowrap}
+.btn:active{opacity:0.75}
+.btn-primary{background:var(--green);color:#fff}
+.btn-blue{background:var(--blue-l);color:var(--blue)}
+.btn-ghost{background:var(--surface2);color:var(--text2)}
+.btn-danger{background:var(--red-l);color:var(--red)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+
+/* FILTER CHIPS */
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex-shrink:0;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:500;background:var(--surface);color:var(--text2);cursor:pointer;border:1px solid var(--surface3)}
+.chip.active{background:var(--green);color:#fff;border-color:var(--green)}
+
+/* SEARCH */
+.search-wrap{position:relative;margin-bottom:14px}
+.search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:16px;height:16px;stroke:var(--text3);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.search-wrap input{width:100%;padding:9px 12px 9px 34px;border:1.5px solid var(--surface3);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none}
+.search-wrap input:focus{border-color:var(--green)}
+
+/* FILE GRID */
+.file-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.file-card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;cursor:pointer;transition:transform 0.1s}
+.file-card:active{transform:scale(0.97)}
+.file-thumb{height:100px;display:flex;align-items:center;justify-content:center;background:var(--surface2);position:relative}
+.file-thumb img{width:100%;height:100%;object-fit:cover}
+.file-thumb .file-icon{font-size:36px;line-height:1}
+.file-thumb .file-ext{position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,0.55);color:#fff;font-size:9px;font-weight:700;padding:2px 5px;border-radius:3px;letter-spacing:0.05em;text-transform:uppercase}
+.file-info{padding:8px 10px 10px}
+.file-name{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+.file-meta{font-size:10px;color:var(--text3)}
+.file-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 6px;border-radius:10px;font-size:9px;font-weight:700;margin-top:4px}
+.badge-drive{background:var(--blue-l);color:var(--blue)}
+.badge-local{background:var(--green-l);color:var(--green)}
+
+/* LIST VIEW */
+.file-list{display:flex;flex-direction:column;gap:8px}
+.file-row{background:var(--surface);border-radius:var(--radius-sm);box-shadow:var(--shadow);padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer}
+.file-row:active{opacity:0.8}
+.file-row-icon{width:40px;height:40px;border-radius:var(--radius-sm);background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.file-row-body{flex:1;min-width:0}
+.file-row-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.file-row-meta{font-size:11px;color:var(--text3);margin-top:2px}
+.file-row-actions{display:flex;gap:6px;flex-shrink:0}
+
+/* DETAIL MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.modal-overlay.open{display:flex;align-items:flex-end}
+@media(min-width:520px){.modal-overlay.open{align-items:center}}
+.modal{background:var(--surface);border-radius:var(--radius-lg) var(--radius-lg) 0 0;width:100%;max-width:520px;margin:0 auto;padding:20px 20px calc(20px + var(--safe-bottom));max-height:88vh;overflow-y:auto}
+@media(min-width:520px){.modal{border-radius:var(--radius-lg);padding:24px}}
+.modal-handle{width:36px;height:4px;background:var(--surface3);border-radius:2px;margin:0 auto 16px}
+.modal h2{font-size:17px;font-weight:500;margin-bottom:14px}
+.form-group{margin-bottom:12px}
+.form-group label{display:block;font-size:11px;font-weight:700;color:var(--text3);margin-bottom:4px;letter-spacing:0.04em;text-transform:uppercase}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:9px 12px;border:1.5px solid var(--surface3);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--green)}
+.form-group textarea{min-height:64px;resize:vertical;line-height:1.5}
+.btn-row{display:flex;gap:8px;margin-top:14px}
+.btn-row .btn{flex:1}
+
+/* UPLOAD ZONE */
+.drop-zone{border:2px dashed var(--surface3);border-radius:var(--radius);padding:28px 20px;text-align:center;color:var(--text3);font-size:13px;cursor:pointer;transition:border-color 0.15s,background 0.15s;margin-bottom:12px}
+.drop-zone.drag-over{border-color:var(--green);background:var(--green-l);color:var(--green)}
+.drop-zone svg{width:32px;height:32px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;margin:0 auto 8px;display:block}
+.drop-zone p{font-size:12px;margin-top:4px;color:var(--text3)}
+
+/* PREVIEW */
+.preview-frame{width:100%;border-radius:var(--radius-sm);background:var(--surface2);overflow:hidden;margin-bottom:14px}
+.preview-frame img{width:100%;display:block;max-height:240px;object-fit:contain}
+.preview-frame iframe{width:100%;height:320px;border:none}
+.preview-frame audio,.preview-frame video{width:100%;display:block}
+
+/* DRIVE SETUP BANNER */
+#drive-setup{background:var(--blue-l);border-radius:var(--radius);padding:14px;margin-bottom:16px;border:1px solid var(--green-m);display:none}
+#drive-setup p{font-size:13px;color:var(--blue);margin-bottom:8px}
+#drive-setup code{font-size:11px;background:var(--surface);padding:2px 6px;border-radius:4px}
+
+/* EMPTY */
+.empty{text-align:center;padding:48px 20px;color:var(--text3)}
+.empty svg{width:52px;height:52px;stroke:var(--surface3);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;margin:0 auto 12px;display:block}
+.empty p{font-size:14px;margin-bottom:4px}
+.empty small{font-size:12px}
+
+/* VIEW TOGGLE */
+.view-toggle{display:flex;gap:2px;background:var(--surface2);padding:3px;border-radius:var(--radius-sm)}
+.view-btn{padding:5px 10px;border-radius:5px;cursor:pointer;background:none;border:none;color:var(--text3)}
+.view-btn.active{background:var(--surface);color:var(--text)}
+.view-btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;display:block}
+
+/* STATS BAR */
+.stats-bar{display:flex;gap:16px;padding:10px 0;margin-bottom:12px;border-bottom:1px solid var(--surface2)}
+.stat{font-size:12px;color:var(--text3)}
+.stat strong{color:var(--text);font-weight:600}
+
+/* NOTIFICATION TOAST */
+#toast{position:fixed;bottom:calc(20px + var(--safe-bottom));left:50%;transform:translateX(-50%) translateY(100px);background:var(--text);color:var(--bg);padding:10px 20px;border-radius:20px;font-size:13px;font-weight:500;z-index:200;transition:transform 0.3s;white-space:nowrap;pointer-events:none}
+#toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div id="header">
+  <a href="index.html" title="Back">←</a>
+  <div>
+    <h1>Files</h1>
+    <p id="header-sub">On-device storage</p>
+  </div>
+</div>
+
+<div id="content">
+
+  <div id="drive-setup">
+    <p>🔑 <strong>Google Drive not configured.</strong> To enable Drive import, open <code>gdrive.js</code> and add your <code>CLIENT_ID</code> and <code>API_KEY</code>. See README for instructions.</p>
+    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('drive-setup').style.display='none'">Dismiss</button>
+  </div>
+
+  <div class="toolbar">
+    <button class="btn btn-primary" onclick="openUploadModal()">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Upload file
+    </button>
+    <button class="btn btn-blue" id="drive-btn" onclick="importFromDrive()">
+      <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      From Google Drive
+    </button>
+    <button class="btn btn-ghost" onclick="exportData()">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Export
+    </button>
+    <label class="btn btn-ghost" style="cursor:pointer">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Import JSON
+      <input type="file" accept=".json" style="display:none" onchange="importJSON(event)">
+    </label>
+    <div class="view-toggle">
+      <button class="view-btn active" id="vbtn-grid" onclick="setView('grid')" title="Grid view">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      </button>
+      <button class="view-btn" id="vbtn-list" onclick="setView('list')" title="List view">
+        <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="search-wrap">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input id="search" placeholder="Search files…" oninput="renderFiles()">
+  </div>
+
+  <div class="chips" id="type-chips">
+    <div class="chip active" onclick="setTypeFilter('all')">All</div>
+    <div class="chip" onclick="setTypeFilter('image')">Images</div>
+    <div class="chip" onclick="setTypeFilter('pdf')">PDFs</div>
+    <div class="chip" onclick="setTypeFilter('document')">Docs</div>
+    <div class="chip" onclick="setTypeFilter('audio')">Audio</div>
+    <div class="chip" onclick="setTypeFilter('video')">Video</div>
+    <div class="chip" onclick="setTypeFilter('other')">Other</div>
+  </div>
+
+  <div class="stats-bar" id="stats-bar"></div>
+  <div id="files-container"></div>
+</div>
+
+<!-- UPLOAD MODAL -->
+<div class="modal-overlay" id="modal-upload">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2>Upload file</h2>
+    <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <strong>Tap to choose a file</strong>
+      <p>or drag and drop here</p>
+      <input type="file" id="file-input" style="display:none" multiple onchange="handleFileInput(event)">
+    </div>
+    <div id="selected-files" style="margin-bottom:12px"></div>
+    <div class="form-group">
+      <label>Link to (optional)</label>
+      <select id="up-link">
+        <option value="">— not linked —</option>
+        <optgroup label="Topics" id="opt-topics"></optgroup>
+        <optgroup label="Tests" id="opt-tests"></optgroup>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Notes (optional)</label>
+      <textarea id="up-notes" placeholder="What is this file?"></textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="closeModal('modal-upload')">Cancel</button>
+      <button class="btn btn-primary" id="up-save-btn" onclick="saveUpload()" disabled>Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- FILE DETAIL MODAL -->
+<div class="modal-overlay" id="modal-detail">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div id="detail-preview"></div>
+    <div class="form-group">
+      <label>File name</label>
+      <input id="det-name">
+    </div>
+    <div class="form-group">
+      <label>Link to</label>
+      <select id="det-link">
+        <option value="">— not linked —</option>
+        <optgroup label="Topics" id="det-opt-topics"></optgroup>
+        <optgroup label="Tests" id="det-opt-tests"></optgroup>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Notes</label>
+      <textarea id="det-notes" placeholder="Notes about this file…"></textarea>
+    </div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:12px" id="det-meta"></div>
+    <div class="btn-row">
+      <button class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+      <button class="btn btn-ghost" onclick="openFile()">
+        <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        Open
+      </button>
+      <button class="btn btn-primary" onclick="saveDetail()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script type="module">
+import { openDB, getAll, upsert, remove, saveFile, getOne, openFile as dbOpenFile, getAllFilesMeta, exportJSON, importJSON as dbImportJSON } from './db.js';
+import { isDriveConfigured, loadDriveScripts, openDrivePicker, downloadDriveFile } from './gdrive.js';
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let allFiles = [];
+let topics   = [];
+let tests    = [];
+let typeFilter = 'all';
+let viewMode   = 'grid';
+let pendingFiles = [];   // files chosen but not yet saved
+let editingFileId = null;
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+await openDB();
+await refresh();
+
+// Show Drive setup banner if not configured
+if (!isDriveConfigured()) {
+  document.getElementById('drive-setup').style.display = 'block';
+}
+
+// ── Refresh all data ──────────────────────────────────────────────────────────
+async function refresh() {
+  [allFiles, topics, tests] = await Promise.all([
+    getAllFilesMeta(), getAll('topics'), getAll('tests')
+  ]);
+  populateLinkSelects();
+  renderFiles();
+  updateHeader();
+}
+
+function updateHeader() {
+  const total = allFiles.length;
+  const size  = allFiles.reduce((s, f) => s + (f.size || 0), 0);
+  document.getElementById('header-sub').textContent =
+    `${total} file${total !== 1 ? 's' : ''} · ${fmtSize(size)} used`;
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function renderFiles() {
+  const q      = document.getElementById('search').value.toLowerCase();
+  const filtered = allFiles.filter(f => {
+    const matchType = typeFilter === 'all' || getTypeGroup(f.mimeType) === typeFilter;
+    const matchQ    = !q || f.name.toLowerCase().includes(q) || (f.notes || '').toLowerCase().includes(q);
+    return matchType && matchQ;
+  });
+
+  // Stats bar
+  document.getElementById('stats-bar').innerHTML = `
+    <div class="stat"><strong>${filtered.length}</strong> shown</div>
+    <div class="stat"><strong>${allFiles.filter(f=>f.source==='google-drive').length}</strong> from Drive</div>
+    <div class="stat"><strong>${fmtSize(filtered.reduce((s,f)=>s+(f.size||0),0))}</strong></div>
+  `;
+
+  const container = document.getElementById('files-container');
+  if (!filtered.length) {
+    container.innerHTML = `<div class="empty">
+      <svg viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+      <p>${allFiles.length ? 'No files match your filter' : 'No files yet'}</p>
+      <small>${allFiles.length ? 'Try a different search or type' : 'Upload a file or import from Google Drive'}</small>
+    </div>`;
+    return;
+  }
+
+  if (viewMode === 'grid') {
+    container.innerHTML = `<div class="file-grid">${filtered.map(f => fileCard(f)).join('')}</div>`;
+  } else {
+    container.innerHTML = `<div class="file-list">${filtered.map(f => fileRow(f)).join('')}</div>`;
+  }
+}
+
+function fileCard(f) {
+  const icon = fileIcon(f.mimeType);
+  const src  = f.source === 'google-drive';
+  return `<div class="file-card" onclick="openDetail('${f.id}')">
+    <div class="file-thumb">
+      ${f.mimeType.startsWith('image/') ? `<img src="data-placeholder" data-id="${f.id}" alt="${f.name}" onerror="this.style.display='none'">` : `<div class="file-icon">${icon}</div>`}
+      <div class="file-ext">${ext(f.name)}</div>
+    </div>
+    <div class="file-info">
+      <div class="file-name" title="${f.name}">${f.name}</div>
+      <div class="file-meta">${fmtSize(f.size)}</div>
+      <div class="file-badge ${src ? 'badge-drive' : 'badge-local'}">${src ? '☁ Drive' : '📱 Local'}</div>
+    </div>
+  </div>`;
+}
+
+function fileRow(f) {
+  const src = f.source === 'google-drive';
+  return `<div class="file-row" onclick="openDetail('${f.id}')">
+    <div class="file-row-icon">${fileIcon(f.mimeType)}</div>
+    <div class="file-row-body">
+      <div class="file-row-name">${f.name}</div>
+      <div class="file-row-meta">${fmtSize(f.size)} · ${src ? '☁ Drive' : '📱 Local'} · ${fmtDate(f.createdAt)}</div>
+    </div>
+    <div class="file-row-actions">
+      <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();doOpenFile('${f.id}')">Open</button>
+    </div>
+  </div>`;
+}
+
+// ── Upload ────────────────────────────────────────────────────────────────────
+window.openUploadModal = async function() {
+  pendingFiles = [];
+  document.getElementById('selected-files').innerHTML = '';
+  document.getElementById('up-notes').value = '';
+  document.getElementById('up-save-btn').disabled = true;
+  await refresh();
+  document.getElementById('modal-upload').classList.add('open');
+};
+
+window.handleFileInput = function(e) {
+  pendingFiles = [...e.target.files];
+  renderPendingFiles();
+};
+
+function renderPendingFiles() {
+  const el = document.getElementById('selected-files');
+  if (!pendingFiles.length) { el.innerHTML = ''; document.getElementById('up-save-btn').disabled = true; return; }
+  el.innerHTML = pendingFiles.map((f,i) => `
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--surface2)">
+      <span style="font-size:18px">${fileIcon(f.type)}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.name}</div>
+        <div style="font-size:11px;color:var(--text3)">${fmtSize(f.size)}</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="removePending(${i})">✕</button>
+    </div>`).join('');
+  document.getElementById('up-save-btn').disabled = false;
+}
+
+window.removePending = function(i) {
+  pendingFiles.splice(i, 1);
+  renderPendingFiles();
+};
+
+window.saveUpload = async function() {
+  if (!pendingFiles.length) return;
+  const linkedTo = document.getElementById('up-link').value || null;
+  const notes    = document.getElementById('up-notes').value;
+  for (const file of pendingFiles) {
+    await saveFile(file, { name: file.name, mimeType: file.type, linkedTo, notes, source: 'local' });
+  }
+  closeModal('modal-upload');
+  toast(`${pendingFiles.length} file${pendingFiles.length > 1 ? 's' : ''} saved`);
+  await refresh();
+};
+
+// Drag & drop
+const dz = document.getElementById('drop-zone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => {
+  e.preventDefault();
+  dz.classList.remove('drag-over');
+  pendingFiles = [...e.dataTransfer.files];
+  renderPendingFiles();
+});
+
+// ── Google Drive import ───────────────────────────────────────────────────────
+window.importFromDrive = async function() {
+  if (!isDriveConfigured()) {
+    toast('Add CLIENT_ID & API_KEY to gdrive.js first');
+    document.getElementById('drive-setup').style.display = 'block';
+    return;
+  }
+  try {
+    toast('Opening Drive picker…');
+    const chosen = await openDrivePicker({ multiselect: true });
+    if (!chosen.length) return;
+    toast(`Downloading ${chosen.length} file${chosen.length > 1 ? 's' : ''}…`);
+    let saved = 0;
+    for (const df of chosen) {
+      try {
+        const { buffer, mimeType, name } = await downloadDriveFile(df);
+        const blob = new Blob([buffer], { type: mimeType });
+        await saveFile(blob, { name, mimeType, source: 'google-drive', driveId: df.id });
+        saved++;
+      } catch (err) {
+        console.error('Failed to download', df.name, err);
+      }
+    }
+    toast(`${saved} file${saved > 1 ? 's' : ''} imported from Drive`);
+    await refresh();
+  } catch (err) {
+    toast('Drive import failed: ' + err.message);
+  }
+};
+
+// ── File detail ───────────────────────────────────────────────────────────────
+window.openDetail = async function(id) {
+  editingFileId = id;
+  const f = await getOne('files', id); // full record with data
+  if (!f) return;
+
+  // Preview
+  let previewHtml = '';
+  if (f.data) {
+    const blob = new Blob([f.data], { type: f.mimeType });
+    const url  = URL.createObjectURL(blob);
+    if (f.mimeType.startsWith('image/')) {
+      previewHtml = `<div class="preview-frame"><img src="${url}" alt="${f.name}"></div>`;
+    } else if (f.mimeType === 'application/pdf') {
+      previewHtml = `<div class="preview-frame"><iframe src="${url}"></iframe></div>`;
+    } else if (f.mimeType.startsWith('audio/')) {
+      previewHtml = `<div class="preview-frame"><audio controls src="${url}"></audio></div>`;
+    } else if (f.mimeType.startsWith('video/')) {
+      previewHtml = `<div class="preview-frame"><video controls src="${url}" style="max-height:240px"></video></div>`;
+    }
+  }
+  document.getElementById('detail-preview').innerHTML = previewHtml;
+  document.getElementById('det-name').value  = f.name;
+  document.getElementById('det-notes').value = f.notes || '';
+  document.getElementById('det-meta').textContent =
+    `${fmtSize(f.size)} · ${f.source === 'google-drive' ? '☁ Google Drive' : '📱 Local upload'} · ${fmtDate(f.createdAt)}`;
+
+  // Link selects
+  populateDetSelects(f.linkedTo || '');
+  document.getElementById('modal-detail').classList.add('open');
+};
+
+window.saveDetail = async function() {
+  const meta = await getOne('files', editingFileId);
+  if (!meta) return;
+  meta.name     = document.getElementById('det-name').value.trim() || meta.name;
+  meta.notes    = document.getElementById('det-notes').value;
+  meta.linkedTo = document.getElementById('det-link').value || null;
+  meta.updatedAt = new Date().toISOString();
+  await upsert('files', meta);
+  closeModal('modal-detail');
+  toast('Saved');
+  await refresh();
+};
+
+window.confirmDelete = async function() {
+  if (!confirm('Delete this file from your device?')) return;
+  await remove('files', editingFileId);
+  closeModal('modal-detail');
+  toast('File deleted');
+  await refresh();
+};
+
+window.doOpenFile = async function(id) {
+  try {
+    const url = await dbOpenFile(id);
+    window.open(url, '_blank');
+  } catch (e) { toast('Could not open file'); }
+};
+
+window.openFile = function() { doOpenFile(editingFileId); };
+
+// ── Export / Import ───────────────────────────────────────────────────────────
+window.exportData = async function() {
+  const blob = await exportJSON();
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `child-planner-backup-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  toast('Data exported');
+};
+
+window.importJSON = async function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const text = await file.text();
+  try {
+    const counts = await dbImportJSON(text);
+    toast(`Imported ${counts.events} events, ${counts.topics} topics, ${counts.tests} tests`);
+    await refresh();
+  } catch (err) { toast('Import failed: invalid file'); }
+};
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function populateLinkSelects() {
+  const topicOpts = topics.map(t => `<option value="${t.id}">${t.subject}: ${t.topic}</option>`).join('');
+  const testOpts  = tests.map(t  => `<option value="${t.id}">${t.subject}: ${t.name}</option>`).join('');
+  document.getElementById('opt-topics').innerHTML = topicOpts;
+  document.getElementById('opt-tests').innerHTML  = testOpts;
+}
+function populateDetSelects(linkedTo) {
+  const topicOpts = topics.map(t => `<option value="${t.id}"${t.id===linkedTo?' selected':''}>${t.subject}: ${t.topic}</option>`).join('');
+  const testOpts  = tests.map(t  => `<option value="${t.id}"${t.id===linkedTo?' selected':''}>${t.subject}: ${t.name}</option>`).join('');
+  document.getElementById('det-opt-topics').innerHTML = topicOpts;
+  document.getElementById('det-opt-tests').innerHTML  = testOpts;
+  document.getElementById('det-link').value = linkedTo || '';
+}
+
+function getTypeGroup(mime) {
+  if (!mime) return 'other';
+  if (mime.startsWith('image/')) return 'image';
+  if (mime === 'application/pdf') return 'pdf';
+  if (mime.startsWith('audio/')) return 'audio';
+  if (mime.startsWith('video/')) return 'video';
+  if (mime.includes('word') || mime.includes('document') || mime.includes('text')) return 'document';
+  return 'other';
+}
+
+function fileIcon(mime) {
+  if (!mime) return '📄';
+  if (mime.startsWith('image/')) return '🖼';
+  if (mime === 'application/pdf') return '📕';
+  if (mime.startsWith('audio/')) return '🎵';
+  if (mime.startsWith('video/')) return '🎬';
+  if (mime.includes('word') || mime.includes('document')) return '📝';
+  if (mime.includes('sheet') || mime.includes('excel')) return '📊';
+  if (mime.includes('presentation') || mime.includes('powerpoint')) return '📊';
+  if (mime.includes('zip') || mime.includes('archive')) return '🗜';
+  return '📄';
+}
+
+function ext(name) {
+  const p = name.lastIndexOf('.');
+  return p > 0 ? name.slice(p+1).toUpperCase().slice(0,4) : '';
+}
+function fmtSize(b) {
+  if (!b) return '0 B';
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return Math.round(b/1024) + ' KB';
+  return (b/1048576).toFixed(1) + ' MB';
+}
+function fmtDate(s) {
+  if (!s) return '';
+  return new Date(s).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+}
+
+// ── UI controls ───────────────────────────────────────────────────────────────
+window.setTypeFilter = function(type) {
+  typeFilter = type;
+  document.querySelectorAll('#type-chips .chip').forEach((c,i) => {
+    const types = ['all','image','pdf','document','audio','video','other'];
+    c.classList.toggle('active', types[i] === type);
+  });
+  renderFiles();
+};
+
+window.setView = function(v) {
+  viewMode = v;
+  document.getElementById('vbtn-grid').classList.toggle('active', v==='grid');
+  document.getElementById('vbtn-list').classList.toggle('active', v==='list');
+  renderFiles();
+};
+
+window.openDetail = openDetail;
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+window.closeModal = closeModal;
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) closeModal(m.id); });
+});
+
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+window.toast = toast;
+
+// Service worker
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
+</script>
+</body>
+</html>

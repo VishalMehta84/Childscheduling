@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#2d4a3e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Planner">
+<meta name="description" content="Child's timetable, study tracker, sports, clubs and test scheduler">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<title>My Child's Planner</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#f9f7f4;--surface:#ffffff;--surface2:#f2ede7;--surface3:#e8e0d6;
+  --text:#1c1c1e;--text2:#555550;--text3:#8a857e;
+  --green:#2d4a3e;--green-l:#e8f2ee;--green-m:#a8d4be;
+  --sport:#0d6e6e;--sport-l:#e1f5f2;
+  --study:#5c35a0;--study-l:#eeebfb;
+  --club:#a05c10;--club-l:#fef3e2;
+  --tutor:#1a6b3c;--tutor-l:#e8f5ee;
+  --test:#b5451b;--test-l:#fdeee9;
+  --warn:#c17d0a;--warn-l:#fef8e7;
+  --radius:14px;--radius-sm:8px;--radius-lg:20px;
+  --shadow:0 2px 12px rgba(0,0,0,0.08);
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --bg:#0f1210;--surface:#1c2220;--surface2:#252e2a;--surface3:#2f3b36;
+    --text:#f0ebe3;--text2:#a8a49e;--text3:#6b6760;
+    --green:#4a7a66;--green-l:#1a2e26;--green-m:#2a4a3a;
+    --sport-l:#0d2e2e;--study-l:#1e1540;--club-l:#2e1e08;--tutor-l:#0d2e1c;--test-l:#2e150d;--warn-l:#2e2008;
+  }
+}
+html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);font-size:15px}
+h1,h2,.serif{font-family:'DM Serif Display',serif}
+
+/* LAYOUT */
+#app{display:flex;flex-direction:column;height:100%;height:calc(100% - var(--safe-bottom))}
+#header{background:var(--green);color:#fff;padding:calc(var(--safe-top) + 12px) 20px 14px;flex-shrink:0}
+#header h1{font-size:22px;font-weight:400;letter-spacing:-0.3px;color:#f0ebe3}
+#header p{font-size:12px;color:rgba(240,235,227,0.65);margin-top:2px}
+#content{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:0 0 80px}
+#tab-bar{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--surface3);display:flex;padding-bottom:var(--safe-bottom);z-index:50}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px 8px;cursor:pointer;color:var(--text3);font-size:10px;font-weight:500;letter-spacing:0.02em;border:none;background:none;transition:color 0.15s}
+.tab svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform 0.15s}
+.tab.active{color:var(--green)}
+.tab.active svg{transform:scale(1.1)}
+
+/* SECTIONS */
+.section{display:none;padding:16px}
+.section.active{display:block}
+.section-title{font-size:20px;font-weight:400;margin-bottom:4px;color:var(--text)}
+.section-sub{font-size:12px;color:var(--text3);margin-bottom:16px}
+
+/* CARDS */
+.card{background:var(--surface);border-radius:var(--radius);padding:16px;margin-bottom:10px;box-shadow:var(--shadow)}
+.card-sm{background:var(--surface);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;box-shadow:var(--shadow)}
+
+/* WEEK GRID */
+.week-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -16px;padding:0 16px 8px}
+.week-inner{min-width:520px}
+.grid-head{display:grid;grid-template-columns:44px repeat(7,1fr);gap:3px;margin-bottom:4px}
+.day-hdr{text-align:center;font-size:10px;font-weight:600;letter-spacing:0.06em;color:var(--text3);padding:4px 0;text-transform:uppercase}
+.day-hdr.today{color:var(--green);font-weight:700}
+.grid-body{display:grid;grid-template-columns:44px repeat(7,1fr);gap:3px}
+.time-lbl{font-size:10px;color:var(--text3);text-align:right;padding-right:6px;line-height:34px}
+.slot{height:34px;border-radius:6px;background:var(--surface2);cursor:pointer;position:relative;overflow:hidden;border:1px solid transparent;transition:background 0.1s}
+.slot.today-col{background:var(--green-l)}
+.slot:active{opacity:0.75}
+.slot.filled{background:transparent;border-color:transparent}
+.epill{position:absolute;inset:2px;border-radius:4px;display:flex;align-items:center;padding:0 5px;font-size:9.5px;font-weight:600;white-space:nowrap;overflow:hidden}
+.sport .epill{background:var(--sport-l);color:var(--sport)}
+.study .epill{background:var(--study-l);color:var(--study)}
+.club .epill{background:var(--club-l);color:var(--club)}
+.tutor .epill{background:var(--tutor-l);color:var(--tutor)}
+.test .epill{background:var(--test-l);color:var(--test)}
+
+/* LEGEND */
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.leg{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)}
+.ldot{width:9px;height:9px;border-radius:2px}
+
+/* TOPIC CARDS */
+.topic-card{background:var(--surface);border-radius:var(--radius);padding:15px;margin-bottom:10px;box-shadow:var(--shadow)}
+.subject-tag{font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:4px}
+.topic-name{font-size:16px;font-weight:500;margin-bottom:8px}
+.prog-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.prog-track{flex:1;height:5px;background:var(--surface3);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;border-radius:3px;background:var(--green);transition:width 0.4s}
+.prog-pct{font-size:11px;color:var(--text3);min-width:28px;text-align:right}
+.notes-box{font-size:12px;color:var(--text2);background:var(--surface2);border-radius:var(--radius-sm);padding:8px 10px;margin-top:6px;line-height:1.5}
+.warn-box{font-size:12px;color:var(--warn);background:var(--warn-l);border-radius:var(--radius-sm);padding:8px 10px;margin-top:6px;line-height:1.5}
+.test-date-row{font-size:12px;color:var(--text3);margin-top:8px;display:flex;align-items:center;gap:5px}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600}
+.b-study{background:var(--study-l);color:var(--study)}
+.b-ok{background:var(--tutor-l);color:var(--tutor)}
+.b-warn{background:var(--club-l);color:var(--club)}
+.b-alert{background:var(--test-l);color:var(--test)}
+.b-gray{background:var(--surface2);color:var(--text3)}
+.b-green{background:var(--green-l);color:var(--green)}
+
+/* FILTER CHIPS */
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex-shrink:0;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:500;background:var(--surface);color:var(--text2);cursor:pointer;border:1px solid var(--surface3);transition:all 0.15s}
+.chip.active{background:var(--green);color:#fff;border-color:var(--green)}
+
+/* TEST CARDS */
+.test-card{background:var(--surface);border-radius:var(--radius);padding:15px;margin-bottom:10px;box-shadow:var(--shadow)}
+.test-header{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px}
+.countdown{font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px}
+.countdown.soon{background:var(--test-l);color:var(--test)}
+.countdown.ok{background:var(--tutor-l);color:var(--tutor)}
+.countdown.past{background:var(--surface2);color:var(--text3)}
+
+/* OVERVIEW */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.stat-card{background:var(--surface);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);text-align:center}
+.stat-num{font-size:28px;font-family:'DM Serif Display',serif;color:var(--green);margin-bottom:2px}
+.stat-lbl{font-size:11px;color:var(--text3);font-weight:500}
+.upcoming-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--surface2)}
+.upcoming-item:last-child{border:none}
+.date-badge{min-width:38px;text-align:center;font-size:10px;font-weight:700;padding:5px 4px;border-radius:8px;background:var(--surface2);color:var(--text2);line-height:1.3}
+.date-badge span{display:block}
+.date-badge .dm{font-size:13px;color:var(--text)}
+
+/* FAB */
+.fab{position:fixed;bottom:calc(70px + var(--safe-bottom));right:18px;width:52px;height:52px;border-radius:26px;background:var(--green);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(45,74,62,0.4);z-index:40;transition:transform 0.15s}
+.fab:active{transform:scale(0.93)}
+.fab svg{width:24px;height:24px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.modal-overlay.open{display:flex;align-items:flex-end}
+@media(min-width:520px){.modal-overlay.open{align-items:center}}
+.modal{background:var(--surface);border-radius:var(--radius-lg) var(--radius-lg) 0 0;width:100%;max-width:520px;margin:0 auto;padding:20px 20px calc(20px + var(--safe-bottom));max-height:90vh;overflow-y:auto}
+@media(min-width:520px){.modal{border-radius:var(--radius-lg);padding:24px;max-height:80vh}}
+.modal-handle{width:36px;height:4px;background:var(--surface3);border-radius:2px;margin:0 auto 16px;display:block}
+.modal h2{font-size:18px;font-weight:500;margin-bottom:16px}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:12px;font-weight:600;color:var(--text3);margin-bottom:5px;letter-spacing:0.04em;text-transform:uppercase}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:10px 12px;border:1.5px solid var(--surface3);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text);font-size:15px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color 0.15s;-webkit-appearance:none}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--green)}
+.form-group textarea{min-height:72px;resize:vertical;line-height:1.5}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn-row{display:flex;gap:8px;margin-top:16px}
+.btn{flex:1;padding:12px;border-radius:var(--radius-sm);font-size:15px;font-weight:500;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity 0.15s}
+.btn:active{opacity:0.8}
+.btn-primary{background:var(--green);color:#fff}
+.btn-ghost{background:var(--surface2);color:var(--text2)}
+.btn-danger{background:var(--test-l);color:var(--test)}
+.range-row{display:flex;align-items:center;gap:10px}
+.range-row input[type=range]{flex:1;height:4px;-webkit-appearance:none;appearance:none;border-radius:2px;background:var(--surface3);outline:none}
+.range-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--green);cursor:pointer;box-shadow:0 2px 6px rgba(45,74,62,0.3)}
+.range-val{font-size:14px;font-weight:600;color:var(--green);min-width:38px;text-align:right}
+
+/* EMPTY */
+.empty{text-align:center;padding:40px 20px;color:var(--text3)}
+.empty svg{width:48px;height:48px;stroke:var(--surface3);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;margin-bottom:12px}
+.empty p{font-size:14px}
+
+/* INSTALL BANNER */
+#install-banner{display:none;margin:0 16px 10px;background:var(--green-l);border-radius:var(--radius);padding:12px 14px;border:1px solid var(--green-m)}
+#install-banner p{font-size:13px;color:var(--green);margin-bottom:8px}
+#install-banner .ib-row{display:flex;gap:8px}
+#install-banner button{padding:7px 14px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;border:none;cursor:pointer;font-family:'DM Sans',sans-serif}
+#install-btn{background:var(--green);color:#fff}
+#install-dismiss{background:transparent;color:var(--text3)}
+
+/* NOTIFICATION ROW */
+.notif-toggle{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--surface2)}
+.toggle{position:relative;width:46px;height:26px}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:var(--surface3);border-radius:13px;transition:background 0.2s;cursor:pointer}
+.toggle-slider:before{content:'';position:absolute;width:20px;height:20px;border-radius:50%;background:#fff;top:3px;left:3px;transition:transform 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.2)}
+.toggle input:checked+.toggle-slider{background:var(--green)}
+.toggle input:checked+.toggle-slider:before{transform:translateX(20px)}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="header">
+    <h1>My Child's Planner</h1>
+    <p id="header-sub">Loading…</p>
+    <a href="files.html" style="margin-left:auto;color:rgba(240,235,227,0.7);text-decoration:none;font-size:12px;padding:6px 10px;border-radius:6px;background:rgba(255,255,255,0.1);white-space:nowrap;display:flex;align-items:center;gap:5px;transition:background 0.15s" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">
+      <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+      Files
+    </a>
+  </div>
+
+  <div id="content">
+    <div id="install-banner">
+      <p>📲 Install this app on your home screen for quick access — works offline too!</p>
+      <div class="ib-row">
+        <button id="install-btn" onclick="installApp()">Install app</button>
+        <button id="install-dismiss" onclick="dismissBanner()">Not now</button>
+      </div>
+    </div>
+
+    <!-- TIMETABLE -->
+    <div class="section active" id="sec-timetable">
+      <p class="section-title">Timetable</p>
+      <p class="section-sub">Tap a slot to add, tap an event to edit</p>
+      <div class="legend">
+        <div class="leg"><div class="ldot" style="background:var(--sport)"></div>Sport</div>
+        <div class="leg"><div class="ldot" style="background:var(--study)"></div>Study</div>
+        <div class="leg"><div class="ldot" style="background:var(--club)"></div>Club</div>
+        <div class="leg"><div class="ldot" style="background:var(--tutor)"></div>Tuition</div>
+        <div class="leg"><div class="ldot" style="background:var(--test)"></div>Test</div>
+      </div>
+      <div class="week-scroll">
+        <div class="week-inner">
+          <div class="grid-head" id="grid-head"></div>
+          <div class="grid-body" id="grid-body"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRACKER -->
+    <div class="section" id="sec-tracker">
+      <p class="section-title">Study Tracker</p>
+      <p class="section-sub">Topics, progress & areas to improve</p>
+      <div class="chips" id="subject-chips"></div>
+      <div id="topics-list"></div>
+    </div>
+
+    <!-- TESTS -->
+    <div class="section" id="sec-tests">
+      <p class="section-title">Tests & Exams</p>
+      <p class="section-sub">Schedule, prepare & record results</p>
+      <div id="tests-list"></div>
+    </div>
+
+    <!-- OVERVIEW -->
+    <div class="section" id="sec-overview">
+      <p class="section-title">Overview</p>
+      <p class="section-sub">This week at a glance</p>
+      <div class="stat-grid" id="stat-grid"></div>
+      <p style="font-size:14px;font-weight:600;color:var(--text2);margin-bottom:10px">Next 7 days</p>
+      <div id="upcoming-list"></div>
+    </div>
+  </div>
+
+  <nav id="tab-bar">
+    <button class="tab active" onclick="showTab('timetable',0)">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Timetable
+    </button>
+    <button class="tab" onclick="showTab('tracker',1)">
+      <svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      Study
+    </button>
+    <button class="tab" onclick="showTab('tests',2)">
+      <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      Tests
+    </button>
+    <button class="tab" onclick="showTab('overview',3)">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Overview
+    </button>
+  </nav>
+</div>
+
+<button class="fab" id="fab" onclick="openFab()">
+  <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+</button>
+
+<!-- EVENT MODAL -->
+<div class="modal-overlay" id="modal-event">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2 id="ev-title">Add activity</h2>
+    <div class="form-group">
+      <label>Name</label>
+      <input id="ev-name" placeholder="e.g. Football training, Maths tuition…">
+    </div>
+    <div class="form-group">
+      <label>Type</label>
+      <select id="ev-type">
+        <option value="sport">🏅 Sport / Match</option>
+        <option value="study">📖 Study session</option>
+        <option value="club">🎭 After-school club</option>
+        <option value="tutor">🎓 Tuition</option>
+        <option value="test">📝 Test / Exam</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Day</label>
+      <select id="ev-day">
+        <option value="0">Monday</option><option value="1">Tuesday</option>
+        <option value="2">Wednesday</option><option value="3">Thursday</option>
+        <option value="4">Friday</option><option value="5">Saturday</option>
+        <option value="6">Sunday</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Start</label>
+        <input id="ev-start" type="time" value="15:00">
+      </div>
+      <div class="form-group">
+        <label>End</label>
+        <input id="ev-end" type="time" value="16:00">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Venue (optional)</label>
+      <input id="ev-venue" placeholder="Sports hall, Room 12…">
+    </div>
+    <div class="form-group">
+      <label>Notes (optional)</label>
+      <textarea id="ev-notes" placeholder="Equipment needed, coach, reminders…"></textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="closeModal('modal-event')">Cancel</button>
+      <button class="btn btn-danger" id="ev-del" onclick="deleteEvent()" style="display:none;flex:0.6">Remove</button>
+      <button class="btn btn-primary" onclick="saveEvent()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOPIC MODAL -->
+<div class="modal-overlay" id="modal-topic">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2 id="tp-title">Add topic</h2>
+    <div class="form-group">
+      <label>Subject</label>
+      <input id="tp-subject" placeholder="Maths, English, Biology…">
+    </div>
+    <div class="form-group">
+      <label>Topic</label>
+      <input id="tp-topic" placeholder="Quadratic equations, Photosynthesis…">
+    </div>
+    <div class="form-group">
+      <label>Status</label>
+      <select id="tp-status">
+        <option value="not-started">Not started</option>
+        <option value="in-progress">In progress</option>
+        <option value="needs-review">Needs review</option>
+        <option value="confident">Confident ✓</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Completion</label>
+      <div class="range-row">
+        <input type="range" min="0" max="100" step="5" value="0" id="tp-pct" oninput="document.getElementById('tp-pct-val').textContent=this.value+'%'">
+        <span class="range-val" id="tp-pct-val">0%</span>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Notes — what was covered</label>
+      <textarea id="tp-notes" placeholder="Topics covered, key concepts…"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Areas to work on</label>
+      <textarea id="tp-areas" placeholder="Weak spots, things to revisit…"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Next revision / test date</label>
+      <input id="tp-date" type="date">
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="closeModal('modal-topic')">Cancel</button>
+      <button class="btn btn-danger" id="tp-del" onclick="deleteTopic()" style="display:none;flex:0.6">Remove</button>
+      <button class="btn btn-primary" onclick="saveTopic()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- TEST MODAL -->
+<div class="modal-overlay" id="modal-test">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2 id="ts-title">Schedule test</h2>
+    <div class="form-group">
+      <label>Subject</label>
+      <input id="ts-subject" placeholder="Maths, Science…">
+    </div>
+    <div class="form-group">
+      <label>Test name</label>
+      <input id="ts-name" placeholder="Unit 3 test, Mock exam…">
+    </div>
+    <div class="form-group">
+      <label>Date</label>
+      <input id="ts-date" type="date">
+    </div>
+    <div class="form-group">
+      <label>Topics covered</label>
+      <textarea id="ts-topics" placeholder="Which topics will be tested?"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Revision plan</label>
+      <textarea id="ts-prep" placeholder="What to revise, resources needed…"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Result (fill in after)</label>
+      <input id="ts-result" placeholder="e.g. 82%, Grade A…">
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="closeModal('modal-test')">Cancel</button>
+      <button class="btn btn-danger" id="ts-del" onclick="deleteTest()" style="display:none;flex:0.6">Remove</button>
+      <button class="btn btn-primary" onclick="saveTest()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const TIMES=['07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00'];
+const TODAY_DOW=(new Date().getDay()+6)%7;
+const statLabels={sport:'Sport',study:'Study',club:'Club',tutor:'Tuition',test:'Test'};
+
+let state={events:[],topics:[],tests:[]};
+let activeTab='timetable';
+let editId=null;
+let filterSub='all';
+let deferredInstall=null;
+
+// ── Persistence ──────────────────────────────────────────
+function save(){try{localStorage.setItem('cpwa-v1',JSON.stringify(state))}catch(e){}}
+function load(){try{const d=localStorage.getItem('cpwa-v1');if(d)state=JSON.parse(d)}catch(e){}}
+load();
+['events','topics','tests'].forEach(k=>{if(!state[k])state[k]=[]});
+
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+
+// ── Tab nav ───────────────────────────────────────────────
+function showTab(name,idx){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('sec-'+name).classList.add('active');
+  document.querySelectorAll('.tab')[idx].classList.add('active');
+  activeTab=name;
+  document.getElementById('fab').style.display=name==='overview'?'none':'flex';
+  if(name==='timetable')renderGrid();
+  if(name==='tracker')renderTopics();
+  if(name==='tests')renderTests();
+  if(name==='overview')renderOverview();
+}
+
+function openFab(){
+  if(activeTab==='timetable')openEventModal(null);
+  else if(activeTab==='tracker')openTopicModal(null);
+  else if(activeTab==='tests')openTestModal(null);
+}
+
+// ── Header subtitle ───────────────────────────────────────
+function updateHeader(){
+  const now=new Date();
+  const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  document.getElementById('header-sub').textContent=
+    `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+}
+updateHeader();
+
+// ── Grid ──────────────────────────────────────────────────
+function renderGrid(){
+  const head=document.getElementById('grid-head');
+  const body=document.getElementById('grid-body');
+  head.innerHTML='<div></div>'+DAYS.map((d,i)=>`<div class="day-hdr${i===TODAY_DOW?' today':''}">${d}</div>`).join('');
+  body.innerHTML='';
+  TIMES.forEach(t=>{
+    const tl=document.createElement('div');
+    tl.className='time-lbl';
+    tl.textContent=t.slice(0,5);
+    body.appendChild(tl);
+    DAYS.forEach((_,di)=>{
+      const ev=state.events.find(e=>+e.day===di&&e.start===t);
+      const slot=document.createElement('div');
+      slot.className='slot'+(di===TODAY_DOW?' today-col':'')+(ev?' filled '+ev.type:'');
+      if(ev){
+        const pill=document.createElement('div');
+        pill.className='epill';
+        pill.textContent=ev.name;
+        slot.appendChild(pill);
+        slot.onclick=()=>openEventModal(ev.id);
+      } else {
+        slot.onclick=()=>openEventAt(di,t);
+      }
+      body.appendChild(slot);
+    });
+  });
+}
+
+// ── Event modal ───────────────────────────────────────────
+function openEventModal(id){
+  editId=id;
+  const ev=id?state.events.find(e=>e.id===id):null;
+  document.getElementById('ev-title').textContent=ev?'Edit activity':'Add activity';
+  document.getElementById('ev-name').value=ev?.name||'';
+  document.getElementById('ev-type').value=ev?.type||'sport';
+  document.getElementById('ev-day').value=ev?.day??TODAY_DOW;
+  document.getElementById('ev-start').value=ev?.start||'15:00';
+  document.getElementById('ev-end').value=ev?.end||'16:00';
+  document.getElementById('ev-venue').value=ev?.venue||'';
+  document.getElementById('ev-notes').value=ev?.notes||'';
+  document.getElementById('ev-del').style.display=ev?'block':'none';
+  document.getElementById('modal-event').classList.add('open');
+}
+function openEventAt(day,time){
+  openEventModal(null);
+  document.getElementById('ev-day').value=day;
+  document.getElementById('ev-start').value=time;
+}
+function saveEvent(){
+  const name=document.getElementById('ev-name').value.trim();
+  if(!name)return;
+  const ev={id:editId||uid(),name,type:document.getElementById('ev-type').value,
+    day:+document.getElementById('ev-day').value,start:document.getElementById('ev-start').value,
+    end:document.getElementById('ev-end').value,venue:document.getElementById('ev-venue').value,
+    notes:document.getElementById('ev-notes').value};
+  state.events=editId?state.events.map(e=>e.id===editId?ev:e):[...state.events,ev];
+  save();closeModal('modal-event');renderGrid();
+}
+function deleteEvent(){
+  state.events=state.events.filter(e=>e.id!==editId);
+  save();closeModal('modal-event');renderGrid();
+}
+
+// ── Topics ────────────────────────────────────────────────
+const statusMap={'not-started':['Not started','b-gray'],'in-progress':['In progress','b-study'],
+  'needs-review':['Needs review','b-warn'],'confident':['Confident','b-ok']};
+
+function renderTopics(){
+  const subjects=['all',...new Set(state.topics.map(t=>t.subject))];
+  document.getElementById('subject-chips').innerHTML=subjects.map(s=>
+    `<div class="chip${filterSub===s?' active':''}" onclick="setSub('${s}')">${s==='all'?'All subjects':s}</div>`).join('');
+  const list=state.filterSub==='all'||filterSub==='all'?state.topics:state.topics.filter(t=>t.subject===filterSub);
+  const el=document.getElementById('topics-list');
+  if(!list.length){el.innerHTML=emptyState('No topics yet. Tap + to add one.');return}
+  el.innerHTML=list.map(t=>{
+    const [sl,sc]=statusMap[t.status]||['Unknown','b-gray'];
+    return `<div class="topic-card" onclick="openTopicModal('${t.id}')">
+      <div class="subject-tag">${t.subject}</div>
+      <div class="topic-name">${t.topic}</div>
+      <div class="prog-row">
+        <div class="prog-track"><div class="prog-fill" style="width:${t.pct||0}%"></div></div>
+        <div class="prog-pct">${t.pct||0}%</div>
+        <span class="badge ${sc}">${sl}</span>
+      </div>
+      ${t.notes?`<div class="notes-box">📝 ${t.notes}</div>`:''}
+      ${t.areas?`<div class="warn-box">⚠️ Work on: ${t.areas}</div>`:''}
+      ${t.testDate?`<div class="test-date-row">📅 Next revision: <strong>${fmtDate(t.testDate)}</strong></div>`:''}
+    </div>`;
+  }).join('');
+}
+function setSub(s){filterSub=s;renderTopics()}
+
+function openTopicModal(id){
+  editId=id;
+  const t=id?state.topics.find(x=>x.id===id):null;
+  document.getElementById('tp-title').textContent=t?'Edit topic':'Add topic';
+  document.getElementById('tp-subject').value=t?.subject||'';
+  document.getElementById('tp-topic').value=t?.topic||'';
+  document.getElementById('tp-status').value=t?.status||'not-started';
+  document.getElementById('tp-pct').value=t?.pct||0;
+  document.getElementById('tp-pct-val').textContent=(t?.pct||0)+'%';
+  document.getElementById('tp-notes').value=t?.notes||'';
+  document.getElementById('tp-areas').value=t?.areas||'';
+  document.getElementById('tp-date').value=t?.testDate||'';
+  document.getElementById('tp-del').style.display=t?'block':'none';
+  document.getElementById('modal-topic').classList.add('open');
+}
+function saveTopic(){
+  const subject=document.getElementById('tp-subject').value.trim();
+  const topic=document.getElementById('tp-topic').value.trim();
+  if(!subject||!topic)return;
+  const t={id:editId||uid(),subject,topic,status:document.getElementById('tp-status').value,
+    pct:+document.getElementById('tp-pct').value,notes:document.getElementById('tp-notes').value,
+    areas:document.getElementById('tp-areas').value,testDate:document.getElementById('tp-date').value};
+  state.topics=editId?state.topics.map(x=>x.id===editId?t:x):[...state.topics,t];
+  save();closeModal('modal-topic');renderTopics();
+}
+function deleteTopic(){
+  state.topics=state.topics.filter(t=>t.id!==editId);
+  save();closeModal('modal-topic');renderTopics();
+}
+
+// ── Tests ─────────────────────────────────────────────────
+function renderTests(){
+  const el=document.getElementById('tests-list');
+  const sorted=[...state.tests].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  if(!sorted.length){el.innerHTML=emptyState('No tests scheduled. Tap + to add one.');return}
+  const now=new Date();now.setHours(0,0,0,0);
+  el.innerHTML=sorted.map(t=>{
+    const d=new Date(t.date);
+    const days=Math.ceil((d-now)/(864e5));
+    const past=days<0;
+    let cls='countdown ok',lbl=days===0?'Today':days===1?'Tomorrow':`${days} days`;
+    if(past){cls='countdown past';lbl=t.result?'Done':'Past'}
+    else if(days<=3)cls='countdown soon';
+    return `<div class="test-card" onclick="openTestModal('${t.id}')">
+      <div class="test-header">
+        <div>
+          <div class="subject-tag">${t.subject}</div>
+          <div class="topic-name">${t.name}</div>
+          <div style="font-size:12px;color:var(--text3)">${fmtDate(t.date)}</div>
+        </div>
+        <div class="${cls}">${lbl}</div>
+      </div>
+      ${t.result?`<div style="margin-top:8px"><span class="badge b-green">🏆 ${t.result}</span></div>`:''}
+      ${t.topics?`<div class="notes-box" style="margin-top:8px">📋 ${t.topics}</div>`:''}
+      ${t.prep?`<div class="notes-box" style="margin-top:6px">✅ Prep: ${t.prep}</div>`:''}
+    </div>`;
+  }).join('');
+}
+function openTestModal(id){
+  editId=id;
+  const t=id?state.tests.find(x=>x.id===id):null;
+  document.getElementById('ts-title').textContent=t?'Edit test':'Schedule test';
+  document.getElementById('ts-subject').value=t?.subject||'';
+  document.getElementById('ts-name').value=t?.name||'';
+  document.getElementById('ts-date').value=t?.date||'';
+  document.getElementById('ts-topics').value=t?.topics||'';
+  document.getElementById('ts-prep').value=t?.prep||'';
+  document.getElementById('ts-result').value=t?.result||'';
+  document.getElementById('ts-del').style.display=t?'block':'none';
+  document.getElementById('modal-test').classList.add('open');
+}
+function saveTest(){
+  const subject=document.getElementById('ts-subject').value.trim();
+  const name=document.getElementById('ts-name').value.trim();
+  if(!subject||!name)return;
+  const t={id:editId||uid(),subject,name,date:document.getElementById('ts-date').value,
+    topics:document.getElementById('ts-topics').value,prep:document.getElementById('ts-prep').value,
+    result:document.getElementById('ts-result').value};
+  state.tests=editId?state.tests.map(x=>x.id===editId?t:x):[...state.tests,t];
+  save();closeModal('modal-test');renderTests();
+}
+function deleteTest(){
+  state.tests=state.tests.filter(t=>t.id!==editId);
+  save();closeModal('modal-test');renderTests();
+}
+
+// ── Overview ──────────────────────────────────────────────
+function renderOverview(){
+  const now=new Date();now.setHours(0,0,0,0);
+  const sg=document.getElementById('stat-grid');
+  const conf=state.topics.filter(t=>t.status==='confident').length;
+  const total=state.topics.length;
+  sg.innerHTML=`
+    <div class="stat-card"><div class="stat-num">${state.events.filter(e=>e.type==='sport').length}</div><div class="stat-lbl">Sport sessions/wk</div></div>
+    <div class="stat-card"><div class="stat-num">${state.events.filter(e=>e.type==='study'||e.type==='tutor').length}</div><div class="stat-lbl">Study slots/wk</div></div>
+    <div class="stat-card"><div class="stat-num">${state.events.filter(e=>e.type==='club').length}</div><div class="stat-lbl">Clubs/wk</div></div>
+    <div class="stat-card"><div class="stat-num">${total?Math.round(conf/total*100):0}%</div><div class="stat-lbl">Topics confident</div></div>
+    <div class="stat-card"><div class="stat-num">${state.tests.filter(t=>new Date(t.date)>=now).length}</div><div class="stat-lbl">Tests upcoming</div></div>
+    <div class="stat-card"><div class="stat-num">${state.topics.filter(t=>t.areas).length}</div><div class="stat-lbl">Need more work</div></div>
+  `;
+  const in7=new Date(now.getTime()+7*864e5);
+  const items=[
+    ...state.tests.filter(t=>t.date&&new Date(t.date)>=now&&new Date(t.date)<=in7).map(t=>({date:t.date,label:`${t.subject}: ${t.name}`,type:'test'})),
+    ...state.topics.filter(t=>t.testDate&&new Date(t.testDate)>=now&&new Date(t.testDate)<=in7).map(t=>({date:t.testDate,label:`Revise: ${t.topic}`,type:'study'}))
+  ].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const ul=document.getElementById('upcoming-list');
+  if(!items.length){ul.innerHTML=emptyState('Nothing scheduled in the next 7 days.');return}
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  ul.innerHTML=items.map(x=>{
+    const d=new Date(x.date);
+    return `<div class="upcoming-item">
+      <div class="date-badge"><span>${d.getDate()}</span><span class="dm">${months[d.getMonth()]}</span></div>
+      <span class="badge ${x.type==='test'?'b-alert':'b-study'}">${x.type==='test'?'Test':'Revise'}</span>
+      <span style="font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x.label}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── Helpers ───────────────────────────────────────────────
+function fmtDate(s){if(!s)return'';const d=new Date(s);return d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}
+function emptyState(msg){return`<div class="empty"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><p>${msg}</p></div>`}
+
+function closeModal(id){document.getElementById(id).classList.remove('open');editId=null}
+document.querySelectorAll('.modal-overlay').forEach(m=>{
+  m.addEventListener('click',e=>{if(e.target===m)closeModal(m.id)})
+});
+
+// ── PWA Install ───────────────────────────────────────────
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();deferredInstall=e;
+  if(!localStorage.getItem('banner-dismissed'))
+    document.getElementById('install-banner').style.display='block';
+});
+async function installApp(){
+  if(!deferredInstall)return;
+  await deferredInstall.prompt();
+  deferredInstall=null;
+  document.getElementById('install-banner').style.display='none';
+}
+function dismissBanner(){
+  document.getElementById('install-banner').style.display='none';
+  localStorage.setItem('banner-dismissed','1');
+}
+window.addEventListener('appinstalled',()=>{document.getElementById('install-banner').style.display='none'});
+
+// ── Service Worker ────────────────────────────────────────
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
+
+// ── URL hash routing ──────────────────────────────────────
+const tabMap={timetable:0,tracker:1,tests:2,overview:3};
+const hash=location.hash.replace('#','');
+if(tabMap[hash]!==undefined)showTab(hash,tabMap[hash]);
+else renderGrid();
+</script>
+</body>
+</html>
